@@ -30,7 +30,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${details.participants
                   .map(
                     (participant) =>
-                      `<li class="participant-item">${participant}</li>`
+                      `<li class="participant-item">
+                        <span>${participant}</span>
+                        <span class="delete-icon" title="Remove participant" data-activity="${name}" data-email="${participant}">&#128465;</span>
+                      </li>`
                   )
                   .join("")}
               </ul>
@@ -53,7 +56,45 @@ document.addEventListener("DOMContentLoaded", () => {
           ${participantsHTML}
         `;
 
+
         activitiesList.appendChild(activityCard);
+
+        // Add event listeners for delete icons after rendering
+        setTimeout(() => {
+          document.querySelectorAll('.delete-icon').forEach(icon => {
+            icon.addEventListener('click', async (e) => {
+              const activityName = icon.getAttribute('data-activity');
+              const email = icon.getAttribute('data-email');
+              if (confirm(`Unregister ${email} from ${activityName}?`)) {
+                try {
+                  const response = await fetch(`/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`, {
+                    method: 'DELETE',
+                  });
+                  const result = await response.json();
+                  if (response.ok) {
+                    messageDiv.textContent = result.message;
+                    messageDiv.className = "success";
+                    fetchActivities();
+                  } else {
+                    messageDiv.textContent = result.detail || "An error occurred";
+                    messageDiv.className = "error";
+                  }
+                  messageDiv.classList.remove("hidden");
+                  setTimeout(() => {
+                    messageDiv.classList.add("hidden");
+                  }, 5000);
+                } catch (error) {
+                  messageDiv.textContent = "Failed to unregister. Please try again.";
+                  messageDiv.className = "error";
+                  messageDiv.classList.remove("hidden");
+                  setTimeout(() => {
+                    messageDiv.classList.add("hidden");
+                  }, 5000);
+                }
+              }
+            });
+          });
+        }, 0);
 
         // Add option to select dropdown
         const option = document.createElement("option");
